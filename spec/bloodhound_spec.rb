@@ -1,15 +1,6 @@
 require "spec_helper"
 
 describe Bloodhound do
-  def be_included_in_extracted_attributes_from(attribute_string)
-    simple_matcher :other_set_of_attributes do |given|
-      expected = subject.attributes_from(attribute_string)
-      given.each do |key, value|
-        expected.fetch(key).should == value
-      end
-    end
-  end
-
   context "adding fields" do
     it "can specify a type of :string" do
       subject.add_search_field(:some_string, :string)
