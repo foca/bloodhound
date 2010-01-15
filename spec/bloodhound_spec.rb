@@ -97,4 +97,11 @@ describe Bloodhound do
       { "foo" => Time.mktime(2010, 1, 5, 12, 0, 0) }.should be_included_in_extracted_attributes_from("foo:2010-01-05 12:00:00")
     end
   end
+
+  context "processing matched values with user-defined lambdas" do
+    it "lets you convert matched values according to your business rules" do
+      subject.add_search_field(:incomplete, :boolean, "complete") {|value| not value }
+      { "complete" => false }.should be_included_in_extracted_attributes_from("incomplete:yes")
+    end
+  end
 end
