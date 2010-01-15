@@ -83,6 +83,15 @@ Any extra options you pass to `search_field` are added into the finder options:
     attributes #=> { :joins => :user,
                      :conditions => { "users.login" => "foca" } }
 
+Install it
+----------
+
+    gem install bloodhound
+
+For the active record interface:
+
+    config.gem "bloodhound", :lib => "bloodhound/active_record"
+
 Known problems
 --------------
 
