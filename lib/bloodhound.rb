@@ -6,6 +6,7 @@ class Bloodhound
 
   def initialize
     @search_fields = {}
+    @keywords = {}
   end
 
   def fields
@@ -17,7 +18,7 @@ class Bloodhound
     fuzzy = options.delete(:fuzzy)
     type = options.delete(:type).try(:to_sym)
 
-    @search_fields[name.to_sym] = {
+    fields[name.to_sym] = {
       :attribute => attribute.to_s,
       :type      => type,
       :fuzzy     => fuzzy.nil? ? true : fuzzy,
@@ -26,18 +27,28 @@ class Bloodhound
     }
   end
 
+  def keyword(name, &block)
+    @keywords[name.to_sym] = block
+  end
+
   def search_scope(model, query)
     tokenize(query).inject(model) do |model, (key,value)|
-      value.nil? ? text_search_for(model, key) : attribute_search_for(model, key, value)
+      if value.nil?
+        text_search_for(model, key)
+      elsif has_keyword?(key)
+        keyword_search_for(model, key, value)
+      else
+        attribute_search_for(model, key, value)
+      end
     end
   end
 
   def text_search_for(model, value)
-    return model if @search_fields.empty?
+    return model if fields.empty?
 
     model = scoped_by_text_search_options(model)
 
-    text_search_conditions = @search_fields.inject([[], {}]) do |conditions, (name,properties)|
+    text_search_conditions = fields.inject([[], {}]) do |conditions, (name,properties)|
       if properties[:fuzzy]
         conditions[0] << "#{properties[:attribute]} LIKE :#{name}"
         conditions[1].update(name => properties[:mapping].call("%#{value}%"))
@@ -53,14 +64,19 @@ class Bloodhound
   private :text_search_for
 
   def attribute_search_for(model, name, value)
-    properties = @search_fields.fetch(name.to_sym, {})
+    properties = fields.fetch(name.to_sym, {})
 
-    return model if type.nil?
+    return model if properties[:type].nil?
 
     value = properties[:mapping].call(cast_value(value, properties[:type]))
     model.scoped(properties[:options].merge(:conditions => { properties[:attribute] => value }))
   end
   private :attribute_search_for
+
+  def keyword_search_for(model, keyword, value)
+    model.scoped(@keywords[keyword].call(value))
+  end
+  private :keyword_search_for
 
   def default_mapping
     lambda {|value| value }
@@ -93,7 +109,7 @@ class Bloodhound
   private :cast_value
 
   def scoped_by_text_search_options(model)
-    @search_fields.inject(model) do |model, (name,properties)|
+    fields.inject(model) do |model, (name,properties)|
       properties[:fuzzy] ? model.scoped(properties[:options]) : model
     end
   end
@@ -106,6 +122,10 @@ class Bloodhound
     end
   end
   private :tokenize
+
+  def has_keyword?(name)
+    @keywords.has_key?(name)
+  end
 
   module Searchable
     def bloodhound(&block)

@@ -26,14 +26,18 @@ class Product < ActiveRecord::Base
     search.field :name
     search.field :value
     search.field :available, :type => :boolean, :fuzzy => false
+
+    search.keyword :sort do |value|
+      { :order => "#{search.fields[value.to_sym][:attribute]} DESC" }
+    end
   end
 end
 
 describe Bloodhound do
   before :all do
     @john = User.create(:first_name => "John", :last_name => "Doe")
-    @john.products.create(:name => "Rubber Duck", :value => 10)
-    @john.products.create(:name => "TV", :value => 200)
+    @tv = @john.products.create(:name => "Rubber Duck", :value => 10)
+    @ducky = @john.products.create(:name => "TV", :value => 200)
   end
 
   it "finds a user by first_name, in a case insensitive manner" do
@@ -54,6 +58,10 @@ describe Bloodhound do
   it "can find using key:value pairs for attribuets that define a type" do
     User.scoped_search("available_product:yes").should include(@john)
     User.scoped_search("available_product:no").should_not include(@john)
+  end
+
+  it "allows defining arbitrary keywords to create scopes" do
+    @john.products.scoped_search("order:name").all.should == [@tv, @ducky]
   end
 
   it "exposes the fields via bloodhound#attributes" do
