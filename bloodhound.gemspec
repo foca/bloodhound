@@ -18,10 +18,8 @@ Gem::Specification.new do |s|
 README.markdown
 bloodhound.gemspec
 lib/bloodhound.rb
-lib/bloodhound/active_record.rb
 spec/spec_helper.rb
 spec/bloodhound_spec.rb
-spec/bloodhound/active_record_spec.rb
 ]
 end
 
