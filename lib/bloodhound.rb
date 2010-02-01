@@ -1,7 +1,7 @@
 require "chronic"
 
 class Bloodhound
-  VERSION = "0.1"
+  VERSION = "0.2"
   ATTRIBUTE_RE = /\s*(?:(?:(\S+):)?(?:"([^"]*)"|'([^']*)'|(\S+)))\s*/.freeze
 
   def initialize
