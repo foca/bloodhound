@@ -8,11 +8,22 @@ class Bloodhound
     @search_fields = {}
   end
 
+  def fields
+    @search_fields
+  end
+
   def field(name, options={}, &mapping)
-    attribute = options.delete(:attribute) || name.to_s
-    fuzzy     = options.delete(:fuzzy) || true
-    type      = options.delete(:type)
-    @search_fields[name.to_sym] = [attribute, type.try(:to_sym), fuzzy, options, mapping]
+    attribute = options.delete(:attribute) || name
+    fuzzy = options.delete(:fuzzy)
+    type = options.delete(:type).try(:to_sym)
+
+    @search_fields[name.to_sym] = {
+      :attribute => attribute.to_s,
+      :type      => type,
+      :fuzzy     => fuzzy.nil? ? true : fuzzy,
+      :options   => options,
+      :mapping   => mapping || default_mapping
+    }
   end
 
   def search_scope(model, query)
@@ -27,11 +38,9 @@ class Bloodhound
     model = scoped_by_text_search_options(model)
 
     text_search_conditions = @search_fields.inject([[], {}]) do |conditions, (name,properties)|
-      attribute, type, fuzzy, options, mapping = properties
-
-      if fuzzy
-        conditions[0] << "#{attribute} LIKE :#{name}"
-        conditions[1].update(name.to_sym => (mapping || default_mapping).call("%#{value}%"))
+      if properties[:fuzzy]
+        conditions[0] << "#{properties[:attribute]} LIKE :#{name}"
+        conditions[1].update(name => properties[:mapping].call("%#{value}%"))
         conditions
       else
         conditions
@@ -44,12 +53,12 @@ class Bloodhound
   private :text_search_for
 
   def attribute_search_for(model, name, value)
-    attribute, type, _, options, mapping = @search_fields.fetch(name.to_sym, [])
+    properties = @search_fields.fetch(name.to_sym, {})
 
     return model if type.nil?
 
-    value = (mapping || default_mapping).call(cast_value(value, type))
-    model.scoped(options.merge(:conditions => { attribute.to_s => value }))
+    value = properties[:mapping].call(cast_value(value, properties[:type]))
+    model.scoped(properties[:options].merge(:conditions => { properties[:attribute] => value }))
   end
   private :attribute_search_for
 
@@ -85,8 +94,7 @@ class Bloodhound
 
   def scoped_by_text_search_options(model)
     @search_fields.inject(model) do |model, (name,properties)|
-      _, _, fuzzy, options, _ = properties
-      fuzzy ? model.scoped(options) : model
+      properties[:fuzzy] ? model.scoped(properties[:options]) : model
     end
   end
   private :scoped_by_text_search_options

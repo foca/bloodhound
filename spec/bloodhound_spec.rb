@@ -55,4 +55,24 @@ describe Bloodhound do
     User.scoped_search("available_product:yes").should include(@john)
     User.scoped_search("available_product:no").should_not include(@john)
   end
+
+  it "exposes the fields via bloodhound#attributes" do
+    last_name = User.bloodhound.fields[:last_name]
+    last_name[:attribute].should == "last_name"
+    last_name[:type].should be_nil
+    last_name[:fuzzy].should be_true
+    last_name[:options].should == {}
+
+    first_name = User.bloodhound.fields[:first_name]
+    first_name[:attribute].should == "lower(users.first_name)"
+    first_name[:type].should be_nil
+    first_name[:fuzzy].should be_true
+    first_name[:options].should == {}
+
+    availability = Product.bloodhound.fields[:available]
+    availability[:attribute].should == "available"
+    availability[:type].should == :boolean
+    availability[:fuzzy].should be_false
+    availability[:options].should == {}
+  end
 end
