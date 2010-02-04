@@ -74,7 +74,7 @@ class Bloodhound
   private :attribute_search_for
 
   def keyword_search_for(model, keyword, value)
-    model.scoped(@keywords[keyword].call(value))
+    model.scoped(@keywords[keyword.to_sym].call(value))
   end
   private :keyword_search_for
 
@@ -124,7 +124,7 @@ class Bloodhound
   private :tokenize
 
   def has_keyword?(name)
-    @keywords.has_key?(name)
+    @keywords.has_key?(name.to_sym)
   end
 
   module Searchable
