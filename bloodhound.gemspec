@@ -1,10 +1,10 @@
 Gem::Specification.new do |s|
   s.name    = "bloodhound"
-  s.version = "0.2.1"
-  s.date    = "2010-02-04"
+  s.version = "0.3"
+  s.date    = "2010-02-07"
 
-  s.description = "Convert strings like 'user:foca age:23' to { 'user' => 'foca' => 'age' => 23 }"
-  s.summary = "Convert strings like 'user:foca age:23' to { 'user' => 'foca' => 'age' => 23 }"
+  s.description = "Map strings like 'user:foca age:23' to ActiveRecord named_scopes"
+  s.summary = "Map strings like 'user:foca age:23' to ActiveRecord named_scopes"
   s.homepage    = "http://github.com/foca/bloodhound"
 
   s.authors = ["Nicolás Sanguinetti"]
