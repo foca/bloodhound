@@ -94,7 +94,7 @@ class Bloodhound
     when :float, :decimal
       Float(value)
     when :date
-      Date.parse(Chronic.parse(value).to_s)
+      Date.parse(Chronic.parse(value, :context => :past).to_s)
     when :time, :datetime
       Chronic.parse(value)
     else
