@@ -14,15 +14,17 @@ class Bloodhound
 
   def field(name, options={}, &mapping)
     @fields[name.to_sym] = field = {
-      :attribute => options.fetch(:attribute, name).to_s,
-      :type      => options.fetch(:type, :string).to_sym,
-      :options   => options.except(:attribute, :type),
-      :mapping   => mapping || default_mapping
+      :attribute       => options.fetch(:attribute, name).to_s,
+      :type            => options.fetch(:type, :string).to_sym,
+      :case_sensitive  => options.fetch(:case_sensitive, true),
+      :match_substring => options.fetch(:match_substring, false),
+      :options         => options.except(:attribute, :type, :case_sensitive, :match_substring),
+      :mapping         => mapping || default_mapping
     }
 
     define_scope(name) do |value|
       value = field[:mapping].call(cast_value(value, field[:type]))
-      field[:options].merge(:conditions => { field[:attribute] => value })
+      field[:options].merge(:conditions => setup_conditions(field, value))
     end
   end
 
@@ -90,6 +92,30 @@ class Bloodhound
     end
   end
   private :cast_value
+
+  def setup_conditions(field, value)
+    case field[:type]
+    when :string
+      conditions_for_string_search(field, value)
+    else
+      { field[:attribute] => value }
+    end
+  end
+
+  def conditions_for_string_search(field, value)
+    if field[:case_sensitive]
+      field_to_search = field[:attribute]
+      value_to_search = value
+    else
+      field_to_search = "lower(#{field[:attribute]})"
+      value_to_search = value.downcase
+    end
+    if field[:match_substring]
+      value_to_search = "%#{value_to_search}%"
+    end
+    [ "#{field_to_search} like ?", value_to_search ]
+  end
+  private :conditions_for_string_search
 
   def self.tokenize(query)
     query.scan(ATTRIBUTE_RE).map do |(key,*value)|

@@ -8,6 +8,8 @@ class User < ActiveRecord::Base
   bloodhound do |search|
     search.field :first_name
     search.field :last_name
+    search.field :insensitive_last_name, :attribute => "last_name", :case_sensitive => false
+    search.field :substringed_last_name, :attribute => "last_name", :match_substring => true
     search.field :available_product, :type => :boolean,
                                      :attribute => "products.available",
                                      :include => :products
@@ -52,6 +54,16 @@ describe Bloodhound do
   it "finds a user by last_name, but only in a case sensitive manner" do
     User.scopes_for_query("last_name:Doe").should include(@john)
     User.scopes_for_query("last_name:Doe").should have(1).element
+  end
+
+  it "can find using case insensitive search" do
+    User.scopes_for_query("insensitive_last_name:doe").should include(@john)
+    User.scopes_for_query("insensitive_last_name:doe").should have(1).element
+  end
+
+  it "can find matching substrings" do
+    User.scopes_for_query("substringed_last_name:oe").should include(@john)
+    User.scopes_for_query("substringed_last_name:oe").should have(1).element
   end
 
   it "can find using key:value pairs for attribuets that define a type" do
