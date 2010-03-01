@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
   s.name    = "bloodhound"
-  s.version = "0.3"
-  s.date    = "2010-02-07"
+  s.version = "0.3.1"
+  s.date    = "2010-03-01"
 
   s.description = "Map strings like 'user:foca age:23' to ActiveRecord named_scopes"
   s.summary = "Map strings like 'user:foca age:23' to ActiveRecord named_scopes"
