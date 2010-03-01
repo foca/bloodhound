@@ -7,6 +7,7 @@ class User < ActiveRecord::Base
 
   bloodhound do |search|
     search.field :first_name
+    search.alias_field :name, :first_name
     search.field :last_name
     search.field :insensitive_last_name, :attribute => "last_name", :case_sensitive => false
     search.field :substringed_last_name, :attribute => "last_name", :match_substring => true
@@ -45,6 +46,10 @@ describe Bloodhound do
 
   it "finds a user by first_name" do
     User.scopes_for_query("first_name:John").should include(@john)
+  end
+
+  it "finds a user by first_name, using an alias" do
+    User.scopes_for_query("name:John").should include(@john)
   end
 
   it "finds by text search" do

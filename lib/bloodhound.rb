@@ -22,10 +22,20 @@ class Bloodhound
       :mapping         => mapping || default_mapping
     }
 
+    define_field(name, field)
+  end
+
+  def define_field(name, field)
     define_scope(name) do |value|
       value = field[:mapping].call(cast_value(value, field[:type]))
       field[:options].merge(:conditions => setup_conditions(field, value))
     end
+  end
+  private :define_field
+
+  def alias_field(name, other_field)
+    @fields[name.to_sym] = @fields[other_field.to_sym]
+    define_field(name, @fields[name.to_sym])
   end
 
   def text_search(*fields)
