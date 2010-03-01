@@ -28,7 +28,7 @@ class Product < ActiveRecord::Base
     search.text_search "products.name", "products.value"
 
     search.field :name
-    search.field :value
+    search.field :value, :type => :decimal
     search.field :available, :type => :boolean
 
     search.keyword :sort do |value|
@@ -78,5 +78,19 @@ describe Bloodhound do
 
   it "allows defining arbitrary keywords to create scopes" do
     @john.products.scopes_for_query("sort:name").all.should == [@tv, @ducky]
+  end
+
+  it "allows to search by numeric fields with greater than or lower than modifiers" do
+    @john.products.scopes_for_query("value:=10").should include(@ducky)
+    @john.products.scopes_for_query("value:=10").should have(1).element
+    @john.products.scopes_for_query("value:10").should include(@ducky)
+    @john.products.scopes_for_query("value:10").should have(1).element
+    @john.products.scopes_for_query("value:>100").should include(@tv)
+    @john.products.scopes_for_query("value:>100").should have(1).element
+    @john.products.scopes_for_query("value:<100").should include(@ducky)
+    @john.products.scopes_for_query("value:<100").should have(1).element
+    @john.products.scopes_for_query("value:>200").should have(0).elements
+    @john.products.scopes_for_query("value:>=200").should include(@tv)
+    @john.products.scopes_for_query("value:>=200").should have(1).element
   end
 end

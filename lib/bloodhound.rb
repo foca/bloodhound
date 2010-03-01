@@ -27,7 +27,6 @@ class Bloodhound
 
   def define_field(name, field)
     define_scope(name) do |value|
-      value = field[:mapping].call(cast_value(value, field[:type]))
       field[:options].merge(:conditions => setup_conditions(field, value))
     end
   end
@@ -87,12 +86,8 @@ class Bloodhound
         "false" => false,
         "no"    => false,
         "n"     => false }.fetch(value.downcase, true)
-    when :integer
-      # Kernel#Float is a bit more lax about parsing numbers, like
-      # Integer(0.0) fails, when we just want it interpreted as a zero
-      Float(value).to_i
-    when :float, :decimal
-      Float(value)
+    when :float, :decimal, :integer
+      NumericExpression.new(value, type)
     when :date
       Date.parse(Chronic.parse(value, :context => :past).to_s)
     when :time, :datetime
@@ -104,12 +99,20 @@ class Bloodhound
   private :cast_value
 
   def setup_conditions(field, value)
+    value = field[:mapping].call(cast_value(value, field[:type]))
     case field[:type]
     when :string
       conditions_for_string_search(field, value)
+    when :float, :decimal, :integer
+      conditions_for_numeric(field, value)
     else
       { field[:attribute] => value }
     end
+  end
+  private :setup_conditions
+
+  def conditions_for_numeric(field, value)
+    [ "#{field[:attribute]} #{value.condition} ?", value.to_s ]
   end
 
   def conditions_for_string_search(field, value)
@@ -142,6 +145,36 @@ class Bloodhound
 
     def scopes_for_query(query)
       bloodhound.search(query)
+    end
+  end
+
+  class NumericExpression
+    attr_reader :value, :condition
+
+    def initialize(value, type)
+      parts = value.scan(/(?:[=<>]+|(?:\d|\.)+)/)[0,2]
+      # Kernel#Float is a bit more lax about parsing numbers, like
+      # Integer(0.0) fails, when we just want it interpreted as a zero
+      @value = Float(parts.last)
+      @value = @value.to_i if type == :integer
+      @condition = sanitize_condition(parts.first)
+    end
+
+    def sanitize_condition(cond)
+      valid = %w(= == > < <= >= <>)
+      valid.include?(cond) ? cond : "="
+    end
+
+    def to_i
+      value.to_i
+    end
+
+    def to_f
+      value.to_f
+    end
+
+    def to_s
+      value.to_s
     end
   end
 end
